@@ -11,6 +11,7 @@ public class PlayerAnimator : MonoBehaviour
     
     private Vector2 currentInput;
     private bool isRunning;
+    private bool jump;
     private float currentSpeedValue;
 
     void Start()
@@ -20,6 +21,7 @@ public class PlayerAnimator : MonoBehaviour
         {
             InputManager.Instance.OnMove += UpdateMovementInput;
             InputManager.Instance.OnRun += UpdateRunInput;
+            InputManager.Instance.OnJump += UpdateJump;
         }
     }
 
@@ -39,18 +41,23 @@ public class PlayerAnimator : MonoBehaviour
         }
 
         currentSpeedValue = Mathf.MoveTowards(currentSpeedValue, targetSpeed, acceleration * Time.deltaTime);
-        
+
+        if (jump) 
+        {
+            anim.SetTrigger("Jump");
+            jump = false;
+        }
+
 
         // controllo se il player è fermo e cambio di posizione Idle
         if (currentInput == Vector2.zero && Mathf.Abs(currentSpeedValue) < 0.05f)
         {
-           
-
             anim.SetFloat(Move, 0f);
         }
         else
         {
             anim.SetFloat(Move, currentSpeedValue);
+            
         }
     }
 
@@ -64,12 +71,18 @@ public class PlayerAnimator : MonoBehaviour
         isRunning = run;
     }
 
+    public void UpdateJump()
+    {
+        jump = true;
+    }
+
     private void OnDestroy()
     {
         if (InputManager.Instance != null)
         {
             InputManager.Instance.OnMove -= UpdateMovementInput;
             InputManager.Instance.OnRun -= UpdateRunInput;
+            InputManager.Instance.OnJump -= UpdateJump;
         }
     }
     

@@ -29,6 +29,9 @@ public class InputManager : MonoBehaviour
         controls.Player.Move.performed += ctx => OnMove?.Invoke(ctx.ReadValue<Vector2>());
         controls.Player.Move.canceled += ctx => OnMove?.Invoke(Vector2.zero);
 
+        controls.Player.RotateCam.performed += ctx => OnLook?.Invoke(ctx.ReadValue<Vector2>());
+        controls.Player.RotateCam.canceled += ctx => OnLook?.Invoke(Vector2.zero);
+
         controls.Player.Run.performed += ctx => OnRun?.Invoke(true);
         controls.Player.Run.canceled += ctx => OnRun?.Invoke(false);
 
@@ -50,4 +53,5 @@ public class InputManager : MonoBehaviour
     public event System.Action<bool> OnRun;
     public event System.Action OnJump;
     public event System.Action OnInteract;
+    public event System.Action<Vector2> OnLook;
 }

@@ -8,11 +8,12 @@ public class PlayerMovement : MonoBehaviour
     [Header("Settaglio Movimento, salto e rotazione")]
     [SerializeField] private float walkSpeed = 4f;
     [SerializeField] private float runSpeed = 7f;
-    [SerializeField] private float jumpForce = 5f;
-    [SerializeField] private float rotationSpeed = 15f;
+    [Header("Settings camera")]
+    [SerializeField] private float sensitivity = 30f;
 
     private Rigidbody rb;
     private Vector2 direction;
+    private Vector2 lookInput;
     private bool isRunning;
     private bool isGrounded;
     private bool jumpRequested;
@@ -29,6 +30,7 @@ public class PlayerMovement : MonoBehaviour
             InputManager.Instance.OnMove += HandleMoveInput;
             InputManager.Instance.OnRun += HandleRunToggle;
             InputManager.Instance.OnJump += HandleJumpInput;
+            InputManager.Instance.OnLook += HandleRotateCamInput;
         }
     }
 
@@ -39,6 +41,7 @@ public class PlayerMovement : MonoBehaviour
             InputManager.Instance.OnMove -= HandleMoveInput;
             InputManager.Instance.OnRun -= HandleRunToggle;
             InputManager.Instance.OnJump -= HandleJumpInput;
+            InputManager.Instance.OnLook -= HandleRotateCamInput;
         }
     }
 
@@ -52,15 +55,15 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (jumpRequested)
-        {
-            ExecuteJump();
-        }
+        ApplyRotation();
     }
 
-    public void HandleMoveInput(Vector2 input) => direction = input;
+
+    private void HandleMoveInput(Vector2 input) => direction = input;
+    private void HandleRotateCamInput(Vector2 input) => lookInput = input;
     public void HandleRunToggle(bool runState) => isRunning = runState;
-    public void HandleJumpInput()
+    
+    public void HandleJumpInput() // controllo se sta toccando o meno il terreno
     {
         if (isGrounded)
         {
@@ -68,11 +71,11 @@ public class PlayerMovement : MonoBehaviour
         }
     }
     public bool HasMovementInput() => direction != Vector2.zero;
+    public bool HasRotateCamInput() => lookInput != Vector2.zero;
     public bool IsRunningInput() => isRunning;
 
-    public void ApplyMove()
+    public void ApplyMove() //applico il movimento 
     {
-        Debug.Log("direction: " + direction.x + ", direction2: " + direction.y);
         if (direction == Vector2.zero)
         {
             rb.velocity = new Vector3(0, rb.velocity.y, 0);
@@ -81,28 +84,24 @@ public class PlayerMovement : MonoBehaviour
 
         float targetSpeed = isRunning ? runSpeed : walkSpeed;
 
-        Vector3 moveDirection = new Vector3(direction.x, 0f, direction.y);
 
+        Vector3 moveDirection = (transform.forward * direction.y) + (transform.right * direction.x);
+
+        // Normalizziamo per evitare che cammini più velocemente in diagonale
+        moveDirection.Normalize();
         Vector3 targetVelocity = moveDirection * targetSpeed;
 
- 
         rb.velocity = new Vector3(targetVelocity.x, rb.velocity.y, targetVelocity.z);
-
-        ApplyRotation(moveDirection);
     }
 
-    public void ApplyRotation(Vector3 moveDirection)
-    {
-        if (moveDirection.magnitude < 0.01f) return;
 
-        Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.fixedDeltaTime);
-    }
+    public void ApplyRotation() // applico la rotazione della telecamera
+    { 
+        if (lookInput.magnitude < 0.01f) return;
 
-    private void ExecuteJump()
-    {
-        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-        jumpRequested = false; // Reset della richiesta
+        float mouseX = lookInput.x * sensitivity * Time.fixedDeltaTime;
+
+        transform.Rotate(Vector3.up * mouseX);
     }
 
     private void OnCollisionStay(Collision collision)
